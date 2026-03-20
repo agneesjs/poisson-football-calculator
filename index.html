@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Kalkulatory Poissona i Piłkarski z wykresami</title>
+    <!-- Chart.js do wykresów -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fa;
+            padding: 16px;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+        h1 {
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #0f172a;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        h2 {
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        h2::before {
+            content: "⚽";
+            font-size: 1.6rem;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 8px;
+        }
+        .form-row label {
+            flex: 0 0 140px;
+            font-weight: 500;
+            color: #334155;
+        }
+        input[type="number"] {
+            flex: 1 1 120px;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 1rem;
+            background: #f8fafc;
+            transition: 0.2s;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin: 8px 0 16px;
+            box-shadow: 0 4px 6px rgba(37,99,235,0.3);
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .result-box {
+            background: #f0f9ff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 16px;
+            border-left: 6px solid #2563eb;
+        }
+        .natural-language {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+            background: white;
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+            margin: 20px 0;
+        }
+        .verdict {
+            background: #1e293b;
+            color: white;
+            padding: 16px;
+            border-radius: 16px;
+            margin-top: 16px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .verdict.good { background: #16a34a; }
+        .verdict.average { background: #ca8a04; }
+        .verdict.bad { background: #b91c1c; }
+        .instruction {
+            background: #e6f7ff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            border: 1px dashed #2563eb;
+        }
+        .instruction h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #0369a1;
+        }
+        .extra-option {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 2px solid #e2e8f0;
+        }
+        .flex-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .badge {
+            background: #2563eb20;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            color: #2563eb;
+            font-weight: 500;
+        }
+        @media (max-width: 500px) {
+            .form-row label {
+                flex: 0 0 100%;
+            }
+            h1 { font-size: 1.5rem; }
+            .card { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 Analityka piłkarska – Poisson w akcji</h1>
+    <div class="container">
+        <!-- INSTRUKCJA -->
+        <div class="instruction">
+            <h3>📘 Skąd brać dane?</h3>
+            <p><strong>Średnia ligowa:</strong> Wyszukaj "średnia goli na mecz [liga] [sezon]" – np. Premier League około 2.6.</p>
+            <p><strong>Średnie drużyn:</strong> Na stronach takich jak Flashscore, Sofascore, Transfermarkt znajdziesz statystyki "gole strzelone/mecz" i "stracone/mecz". Możesz też obliczyć sam: (suma goli) / (liczba meczów). Dla większej precyzji używaj osobnych statystyk: u siebie dla gospodarzy, na wyjeździe dla gości.</p>
+            <p><span class="badge">💡 Wskazówka</span> Im więcej meczów w próbce, tym lepsze oszacowanie.</p>
+        </div>
+
+        <!-- KALKULATOR 1: ROZKŁAD POISSONA -->
+        <div class="card">
+            <h2>📈 Rozkład Poissona</h2>
+            <div class="form-row">
+                <label>λ (średnia):</label>
+                <input type="number" id="lambda" step="0.01" min="0" value="1.5">
+            </div>
+            <div class="form-row">
+                <label>Maksymalne k:</label>
+                <input type="number" id="maxK" min="0" max="20" value="8">
+            </div>
+            <button onclick="calculatePoisson()">Oblicz rozkład</button>
+            <div id="poissonResults" class="result-box"></div>
+            <div class="chart-container">
+                <canvas id="poissonChart"></canvas>
+            </div>
+        </div>
+
+        <!-- KALKULATOR 2: TYPOWANIE MECZU -->
+        <div class="card">
+            <h2>⚡ Typowanie meczu</h2>
+            <div class="form-row">
+                <label>Średnia ligowa (gole/mecz):</label>
+                <input type="number" id="leagueAvg" step="0.01" min="0.1" value="2.6">
+            </div>
+            <h3 style="margin: 12px 0 4px;">🏠 Gospodarze</h3>
+            <div class="form-row"><label>Gole strzelone/mecz:</label><input type="number" id="homeScored" step="0.01" min="0" value="1.133"></div>
+            <div class="form-row"><label>Gole stracone/mecz:</label><input type="number" id="homeConceded" step="0.01" min="0" value="1.167"></div>
+            <h3 style="margin: 12px 0 4px;">✈️ Goście</h3>
+            <div class="form-row"><label>Gole strzelone/mecz:</label><input type="number" id="awayScored" step="0.01" min="0" value="1.767"></div>
+            <div class="form-row"><label>Gole stracone/mecz:</label><input type="number" id="awayConceded" step="0.01" min="0" value="1.167"></div>
+
+            <button onclick="calculateFootball()">Oblicz szanse meczu</button>
+            <div id="footballResults" class="result-box"></div>
+            <div class="chart-container">
+                <canvas id="footballChart"></canvas>
+            </div>
+
+            <!-- DODATKOWA OPCJA: Expected Value -->
+            <div class="extra-option">
+                <h3 style="margin-bottom: 12px;">💰 Opcja EV – czy zakład się opłaca?</h3>
+                <div class="flex-row">
+                    <div style="flex:1"><label>Kurs na gospodarzy:</label><input type="number" id="oddsHome" step="0.01" min="1.01" value="2.20"></div>
+                    <div style="flex:1"><label>Kurs na remis:</label><input type="number" id="oddsDraw" step="0.01" min="1.01" value="2.10"></div>
+                    <div style="flex:1"><label>Kurs na gości:</label><input type="number" id="oddsAway" step="0.01" min="1.01" value="1.90"></div>
+                </div>
+                <button onclick="calculateEV()" style="background: #7c3aed;">Oblicz Expected Value</button>
+                <div id="evResult" class="result-box" style="background: #ede9fe;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --------------------------------------------------------------
+        // FUNKCJE POMOCNICZE
+        // --------------------------------------------------------------
+        function factorial(n) {
+            if (n < 0) return NaN;
+            if (n === 0 || n === 1) return 1;
+            let r = 1;
+            for (let i = 2; i <= n; i++) r *= i;
+            return r;
+        }
+
+        function poisson(lambda, k) {
+            return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k);
+        }
+
+        // Silnia dla dużych k (ale u nas max 20, więc OK)
+
+        // --------------------------------------------------------------
+        // KALKULATOR 1: POISSON
+        // --------------------------------------------------------------
+        let poissonChartInstance = null;
+
+        function calculatePoisson() {
+            const lambda = parseFloat(document.getElementById('lambda').value);
+            const maxK = parseInt(document.getElementById('maxK').value);
+            if (isNaN(lambda) || lambda < 0 || isNaN(maxK) || maxK < 1) {
+                alert('Podaj poprawne wartości.');
+                return;
+            }
+
+            let labels = [];
+            let probs = [];
+            let sum = 0;
+
+            for (let k = 0; k <= maxK; k++) {
+                const p = poisson(lambda, k);
+                labels.push(k.toString());
+                probs.push(p);
+                sum += p;
+            }
+
+            // Wyświetl wyniki w formie naturalnej
+            const maxProbIndex = probs.indexOf(Math.max(...probs));
+            const natural = `Dla λ = ${lambda.toFixed(2)} najprawdopodobniejsza liczba zdarzeń to ${maxProbIndex} (P = ${(probs[maxProbIndex]*100).toFixed(1)}%). Suma kontrolna: ${sum.toFixed(4)}.`;
+
+            document.getElementById('poissonResults').innerHTML = `
+                <div class="natural-language">${natural}</div>
+                <table style="width:100%; font-size:0.9rem; border-collapse:collapse;">
+                    <tr><th>k</th><th>P(k)</th></tr>
+                    ${labels.map((k, i) => `<tr><td>${k}</td><td>${(probs[i]*100).toFixed(2)}%</td></tr>`).join('')}
+                </table>
+            `;
+
+            // Rysuj wykres
+            if (poissonChartInstance) poissonChartInstance.destroy();
+            const ctx = document.getElementById('poissonChart').getContext('2d');
+            poissonChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Prawdopodobieństwo',
+                        data: probs,
+                        backgroundColor: 'rgba(37,99,235,0.7)',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => (ctx.raw * 100).toFixed(2) + '%' } }
+                    },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => (v*100).toFixed(0) + '%' } } }
+                }
+            });
+        }
+
+        // --------------------------------------------------------------
+        // KALKULATOR 2: MECZ
+        // --------------------------------------------------------------
+        let footballChartInstance = null;
+        let currentProbHome = 0, currentProbDraw = 0, currentProbAway = 0; // do EV
+
+        function calculateFootball() {
+            const leagueAvg = parseFloat(document.getElementById('leagueAvg').value);
+            const homeScored = parseFloat(document.getElementById('homeScored').value);
+            const homeConceded = parseFloat(document.getElementById('homeConceded').value);
+            const awayScored = parseFloat(document.getElementById('awayScored').value);
+            const awayConceded = parseFloat(document.getElementById('awayConceded').value);
+
+            if ([leagueAvg, homeScored, homeConceded, awayScored, awayConceded].some(isNaN) || leagueAvg <= 0) {
+                alert('Wprowadź wszystkie dane prawidłowo.');
+                return;
+            }
+
+            const lambdaHome = (homeScored * awayConceded) / leagueAvg;
+            const lambdaAway = (awayScored * homeConceded) / leagueAvg;
+
+            const maxGoals = 10;
+            let probHome = 0, probDraw = 0, probAway = 0;
+            let results = {}; // dla wykresu
+
+            for (let i = 0; i <= maxGoals; i++) {
+                for (let j = 0; j <= maxGoals; j++) {
+                    const p = poisson(lambdaHome, i) * poisson(lambdaAway, j);
+                    if (i > j) probHome += p;
+                    else if (i === j) probDraw += p;
+                    else probAway += p;
+
+                    if (i <= 4 && j <= 4) {
+                        results[`${i}-${j}`] = p;
+                    }
+                }
+            }
+
+            currentProbHome = probHome;
+            currentProbDraw = probDraw;
+            currentProbAway = probAway;
+
+            // Naturalny język
+            const sortedResults = Object.entries(results).sort((a,b) => b[1]-a[1]);
+            const topResult = sortedResults[0] ? `${sortedResults[0][0].replace('-',':')} (${(sortedResults[0][1]*100).toFixed(1)}%)` : 'brak';
+
+            const natural = `🏆 Szanse: gospodarze ${(probHome*100).toFixed(1)}%, remis ${(probDraw*100).toFixed(1)}%, goście ${(probAway*100).toFixed(1)}%. Najbardziej prawdopodobny wynik to ${topResult}.`;
+
+            // Tabelka
+            let tableHtml = '<table style="width:100%; font-size:0.9rem;"><tr><th>Wynik</th><th>Prawdopod.</th></tr>';
+            sortedResults.slice(0,6).forEach(([score, p]) => {
+                tableHtml += `<tr><td>${score.replace('-',':')}</td><td>${(p*100).toFixed(2)}%</td></tr>`;
+            });
+            tableHtml += '</table>';
+
+            document.getElementById('footballResults').innerHTML = `
+                <div class="natural-language">${natural}</div>
+                ${tableHtml}
+                <p style="margin-top:12px;"><small>λ gosp.: ${lambdaHome.toFixed(3)}, λ gości: ${lambdaAway.toFixed(3)}</small></p>
+            `;
+
+            // Wykres słupkowy dla szans
+            if (footballChartInstance) footballChartInstance.destroy();
+            const ctx = document.getElementById('footballChart').getContext('2d');
+            footballChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Gospodarze', 'Remis', 'Goście'],
+                    datasets: [{
+                        data: [probHome, probDraw, probAway],
+                        backgroundColor: ['#3b82f6', '#94a3b8', '#ef4444'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => (ctx.raw*100).toFixed(1) + '%' } }
+                    },
+                    scales: { y: { beginAtZero: true, max: 1, ticks: { callback: v => (v*100).toFixed(0) + '%' } } }
+                }
+            });
+
+            // automatycznie przelicz EV przy zmianie? nie, lepiej osobny przycisk
+        }
+
+        // --------------------------------------------------------------
+        // OPCJA DODATKOWA: EXPECTED VALUE
+        // --------------------------------------------------------------
+        function calculateEV() {
+            if (currentProbHome === undefined) {
+                alert('Najpierw oblicz szanse meczu!');
+                return;
+            }
+
+            const oddsH = parseFloat(document.getElementById('oddsHome').value);
+            const oddsD = parseFloat(document.getElementById('oddsDraw').value);
+            const oddsA = parseFloat(document.getElementById('oddsAway').value);
+
+            if ([oddsH, oddsD, oddsA].some(isNaN) || oddsH<1 || oddsD<1 || oddsA<1) {
+                alert('Podaj poprawne kursy (minimum 1.01)');
+                return;
+            }
+
+            const evHome = (currentProbHome * oddsH) - 1;
+            const evDraw = (currentProbDraw * oddsD) - 1;
+            const evAway = (currentProbAway * oddsA) - 1;
+
+            const outcomes = [
+                { name: 'gospodarze', ev: evHome, prob: currentProbHome, odds: oddsH },
+                { name: 'remis', ev: evDraw, prob: currentProbDraw, odds: oddsD },
+                { name: 'goście', ev: evAway, prob: currentProbAway, odds: oddsA }
+            ];
+
+            const best = outcomes.reduce((a,b) => a.ev > b.ev ? a : b);
+
+            let verdictClass = 'bad', verdictText = '❌ Lepiej nie obstawiać – brak dodatniej wartości oczekiwanej.';
+            if (best.ev > 0.05) {
+                verdictClass = 'good';
+                verdictText = `✅ Najlepszy zakład: ${best.name} (EV = ${(best.ev*100).toFixed(1)}%). Możesz rozważyć obstawienie.`;
+            } else if (best.ev > 0) {
+                verdictClass = 'average';
+                verdictText = `⚠️ Słaba dodatnia EV (${(best.ev*100).toFixed(1)}%) – zakład niskiego ryzyka, ale bez przesady.`;
+            } else {
+                verdictText = `❌ Żaden zakład nie ma dodatniej wartości. Najwyższa EV: ${best.name} (${(best.ev*100).toFixed(1)}%).`;
+            }
+
+            let html = `<div class="verdict ${verdictClass}">${verdictText}</div>`;
+            html += '<table style="width:100%; margin-top:12px;"><tr><th>Typ</th><th>EV</th><th>Opłacalność</th></tr>';
+            outcomes.forEach(o => {
+                const color = o.ev > 0.05 ? '#16a34a' : (o.ev > 0 ? '#ca8a04' : '#b91c1c');
+                html += `<tr><td>${o.name}</td><td style="color:${color};">${(o.ev*100).toFixed(2)}%</td><td>${o.ev > 0 ? '➕' : '➖'}</td></tr>`;
+            });
+            html += '</table>';
+
+            document.getElementById('evResult').innerHTML = html;
+        }
+
+        // Inicjalne obliczenia
+        window.onload = function() {
+            calculatePoisson();
+            calculateFootball();
+        };
+    </script>
+</body>
+</html>
